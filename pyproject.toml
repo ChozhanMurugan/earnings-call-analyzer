@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eca"
+version = "0.1.0"
+description = "Earnings Call Analyzer — NLP features + directional classifier + backtest, served as an API."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+authors = [{ name = "Your Name" }]
+license = { text = "MIT" }
+dependencies = [
+    # ingest
+    "requests>=2.32",
+    "httpx>=0.27",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.2",
+    "sec-edgar-downloader>=5.0",
+    "datasets>=2.20",
+    # data
+    "pandas>=2.2",
+    "numpy>=1.26,<2.1",
+    "pyarrow>=16.0",
+    "yfinance>=0.2.40",
+    # nlp / ml
+    "transformers>=4.42",
+    "torch>=2.2",
+    "scikit-learn>=1.5",
+    "lightgbm>=4.3",
+    "nltk>=3.9",
+    # tracking
+    "mlflow>=2.14",
+    # api / app
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "streamlit>=1.36",
+    "plotly>=5.22",
+    # utils
+    "python-dotenv>=1.0",
+    "typer>=0.12",
+    "loguru>=0.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "jupyter>=1.0",
+    "ipykernel>=6.29",
+]
+
+[project.scripts]
+eca = "eca.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
