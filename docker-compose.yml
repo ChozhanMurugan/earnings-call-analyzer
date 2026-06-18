@@ -1,0 +1,37 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # data/ is mounted at runtime so trained models and parquet files persist
+      # across container restarts without being baked into the image.
+      - ./data:/app/data
+    environment:
+      ECA_DATA_DIR: /app/data
+      ECA_MODEL_PATH: /app/data/models/classifier.joblib
+      MLFLOW_TRACKING_URI: file:///app/mlruns
+      EDGAR_USER_AGENT: ${EDGAR_USER_AGENT:-"ECA Research contact@example.com"}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  ui:
+    build: .
+    command: >
+      streamlit run streamlit_app.py
+        --server.port 8501
+        --server.address 0.0.0.0
+        --server.headless true
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      ECA_API_BASE: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy

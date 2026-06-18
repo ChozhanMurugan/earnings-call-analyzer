@@ -1,0 +1,47 @@
+# Data files — mount at runtime via docker-compose volumes, not baked in
+data/
+
+# ML experiment tracking
+mlruns/
+mlartifacts/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build / distribution artifacts
+*.egg-info/
+dist/
+build/
+
+# Binary ML artifacts — large binaries belong in release assets, not the image
+*.parquet
+*.joblib
+
+# Version control
+.git/
+.gitignore
+
+# CI / GitHub workflows (not needed inside the container)
+.github/
+
+# Secrets — never copy into an image
+.env
+.env.*
+!.env.example
+
+# Development-only files
+notebooks/
+tests/
+htmlcov/
+.coverage
