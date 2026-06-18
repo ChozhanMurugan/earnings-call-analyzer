@@ -28,7 +28,7 @@ HuggingFace corpus    ─┼──► feature extraction ──► LightGBM dire
 
 ## Pipeline
 
-1. **Ingest** — `eca.ingest.edgar` pulls 8-K filings + exhibit transcripts from SEC EDGAR (free, official, no ToS issue). `eca.ingest.hf_dataset` loads `jlh-ibm/earnings_call` from HuggingFace for bulk training.
+1. **Ingest** — `eca.ingest.edgar` pulls 8-K filings + exhibit transcripts from SEC EDGAR (free, official, no ToS issue). `eca.ingest.hf_dataset` loads `kurry/sp500_earnings_transcripts` (33 k S&P 500 calls, 2005–2025, Parquet format) from HuggingFace for bulk training.
 2. **Features** — `eca.features.build` runs FinBERT + hedging + guidance + tone-shift and writes a Parquet feature store.
 3. **Labels** — `eca.prices.yfinance_loader` computes T+1 close-to-close returns relative to the SPY benchmark; label = sign of excess return.
 4. **Model** — `eca.model.train` fits a LightGBM classifier under **walk-forward** cross-validation (no look-ahead). Tracked in MLflow.
@@ -37,6 +37,12 @@ HuggingFace corpus    ─┼──► feature extraction ──► LightGBM dire
 
 ## Quickstart
 
+**Docker (easiest — no local Python setup required):**
+```bash
+docker compose up   # API on :8000, Streamlit UI on :8501
+```
+
+**Local development:**
 ```powershell
 # 1. install
 python -m venv .venv
@@ -61,21 +67,28 @@ uvicorn eca.api.main:app --reload
 streamlit run streamlit_app.py
 ```
 
-## Results (placeholder — fill in after first run)
+## Results
+
+Trained on 150 S&P 500 earnings calls (2005–2025) from `kurry/sp500_earnings_transcripts`. Walk-forward CV (5 folds, `TimeSeriesSplit`). Backtest uses **out-of-fold** predictions — the model never sees the test fold during training.
 
 | Metric | Model | SPY buy-and-hold |
 | --- | --- | --- |
-| Directional accuracy (T+1) | _TBD_ | 0.52 |
-| Annualised Sharpe | _TBD_ | _TBD_ |
-| Max drawdown | _TBD_ | _TBD_ |
-| Hit-rate on high-confidence calls (p>0.7) | _TBD_ | — |
+| Directional accuracy (T+1) | **54.4%** (5-fold walk-forward CV mean) | ~52% |
+| Annualised Sharpe | **−0.47** (OOF backtest, threshold=0.10) | ~0.60 |
+| Max drawdown | **−53.1%** (OOF, threshold=0.10) | — |
+| Hit-rate on high-confidence calls (p>0.7) | **47.6%** (threshold=0.20, 63 trades) | — |
+| CV mean AUC | **0.552** | — |
+
+> **Honest note:** 150 transcripts is a small training set. The negative Sharpe reflects that — LightGBM needs more data to build a robust signal, and the earliest walk-forward folds barely have enough history to fit. The 54.4% directional accuracy (above the 52% SPY coin-flip) is the real take-away. Re-run with `--limit 500+` on a GPU to get a meaningfully-sized sample.
+
+Top features by LightGBM split count: `fls_ratio`, `hedge_count`, `sent_pos_mean_dqoq`, `hedge_ratio`, `fls_negative_dqoq` — the QoQ delta and forward-guidance features dominate, consistent with the academic literature.
 
 A walkthrough of the EDA, feature importances, and backtest equity curve lives in [`notebooks/01_eda_and_model.ipynb`](notebooks/01_eda_and_model.ipynb).
 
 ## Roadmap
 
-- [ ] **Docker** — `Dockerfile` + `docker-compose.yml` (API + Streamlit, FinBERT pre-baked). Coming once I have Docker Desktop available.
-- [ ] **Real-data run** — execute the full HF-corpus pipeline and replace `_TBD_` above with real numbers.
+- [x] **Docker** — `Dockerfile` (multi-stage, FinBERT baked in) + `docker-compose.yml` (API + Streamlit). Run with `docker compose up`.
+- [x] **Real-data run** — 150-call pipeline executed; Results table filled with real walk-forward CV and OOF backtest numbers.
 - [ ] **Sector features** — add GICS sector code as a feature and sector-conditional confidence thresholds.
 - [ ] **Transformer fine-tuning** — fine-tune a `DeBERTa-v3-base-finance` head on the direction label.
 - [ ] **EDGAR webhook** — poll the EDGAR EFTS real-time feed for new 8-K filings and trigger the pipeline automatically.

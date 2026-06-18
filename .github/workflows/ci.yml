@@ -40,3 +40,12 @@ jobs:
           name: coverage-report
           path: htmlcov/
           if-no-files-found: ignore
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image (FinBERT weight download skipped in CI)
+        run: docker build --build-arg PREFETCH_FINBERT=false .
