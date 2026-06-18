@@ -30,7 +30,7 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 COPY streamlit_app.py .
-COPY spaces/startup.sh .
+COPY startup.sh .
 
 RUN chmod +x startup.sh && mkdir -p data/models data/processed
 
